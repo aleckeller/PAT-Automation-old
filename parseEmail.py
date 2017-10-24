@@ -9,13 +9,6 @@ import tkMessageBox
 root = Tkinter.Tk()
 root.withdraw()
 
-# Creates excel workbook and sheet
-workbook = xlsxwriter.Workbook('PATInformation.xlsx')
-worksheet = workbook.add_worksheet()
-# Adds headers for the columns
-worksheet.write('A1','Instance')
-worksheet.write('B1','Type')
-worksheet.write('C1','Date')
 # Initialize list that will hold instance,type,and date
 list = []
 
@@ -51,15 +44,26 @@ if directory:
             list.append(tmp)
         else:
             print ("The file " + filename + " is not a .eml or .msg so skipping")
-row = 1
-col = 0
-for x in list:
-    # Instance
-    worksheet.write(row,col,x[0])
-    # Type
-    worksheet.write(row,col + 1,x[1])
-    # Date
-    worksheet.write(row,col + 2,x[2])
-    row = row + 1
-tkMessageBox.showinfo("PAT-Automation","Excel sheet has been created successfully!")
-workbook.close()
+    # If the list is not empty, create excel sheet
+    if list:
+        # Creates excel workbook and sheet
+        workbook = xlsxwriter.Workbook('PATInformation.xlsx')
+        worksheet = workbook.add_worksheet()
+        # Adds headers for the columns
+        worksheet.write('A1','Instance')
+        worksheet.write('B1','Type')
+        worksheet.write('C1','Date')
+        row = 1
+        col = 0
+        for x in list:
+            # Instance
+            worksheet.write(row,col,x[0])
+            # Type
+            worksheet.write(row,col + 1,x[1])
+            # Date
+            worksheet.write(row,col + 2,x[2])
+            row = row + 1
+        tkMessageBox.showinfo("PAT-Automation","Excel sheet has been created successfully!")
+        workbook.close()
+    else:
+        tkMessageBox.showinfo("PAT-Automation","No valid emails were provided.")
