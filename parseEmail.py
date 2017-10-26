@@ -22,7 +22,7 @@ if directory:
     for filename in os.listdir(directory):
         path = directory + "/" + filename
         # Only parse files that end in .eml or .msg
-        if (pathlib2.Path(path).suffix == ".eml" or pathlib2.Path(path).suffix == ".msg"):
+        if (pathlib2.Path(path).suffix == ".eml" or pathlib2.Path(path).suffix == ".msg" or pathlib2.Path(path).suffix == ".txt"):
             file = open(path)
             theEmail = email.message_from_file(file)
             file.close()
