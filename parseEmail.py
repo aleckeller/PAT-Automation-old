@@ -1,4 +1,5 @@
 import email
+from email import parser
 import Tkinter
 import tkFileDialog
 import os
@@ -6,6 +7,7 @@ import pathlib2
 import xlsxwriter
 import tkMessageBox
 from bs4 import BeautifulSoup
+import poplib
 
 root = Tkinter.Tk()
 root.withdraw()
@@ -13,43 +15,49 @@ root.withdraw()
 # Initialize list that will hold instance,type,and date
 list = []
 
-# Displays file dialog
-directory = tkFileDialog.askdirectory(initialdir="~/")
+# Connect to the specified gmail account
+SERVER = "pop.gmail.com"
+EMAIL = ""
+PASS = ""
 
-# If something was chosen...
-if directory:
-    # Go through each file in the directory that was chosen
-    for filename in os.listdir(directory):
-        path = directory + "/" + filename
-        # Only parse files that end in .eml or .msg
-        if (pathlib2.Path(path).suffix == ".eml" or pathlib2.Path(path).suffix == ".msg"):
-            file = open(path)
-            theEmail = email.message_from_file(file)
-            file.close()
+print "Connecting to gmail server..."
+server = poplib.POP3_SSL(SERVER)
 
-            # Gets the instance and date
-            subject = theEmail['subject']
-            instance = subject.split("-",1)[1].strip()
-            date = theEmail['date']
-            payloadList = []
-            # Get the body of the email
-            # TO-DO
-            for payload in theEmail.get_payload():
-                payloadList.append(payload.get_payload())
-            soup = BeautifulSoup(payloadList[1],"lxml")
-            # Get the type of email
-            if "ALERT" in subject:
-                type = "Alert"
-            elif "RESOLVED" in subject:
-                type = "Resolved"
-            else:
-                print ("This email is not an alert or a resolved")
+print "Logging in..."
+server.user(EMAIL)
+server.pass_(PASS)
 
-            # Create tuple with information and add to list
-            tmp = (instance,type,date)
-            list.append(tmp)
+print "You are now logged in as " + EMAIL
+messages = [server.retr(i) for i in range(1, len(server.list()[1]) + 1)]
+
+# If there are any new emails
+if messages:
+    # Concat message pieces:
+    messages = ["\n".join(mssg[1]) for mssg in messages]
+    #Parse message intom an email object:
+    messages = [parser.Parser().parsestr(mssg) for mssg in messages]
+    for theEmail in messages:
+        #Gets the instance and date
+        subject = theEmail['subject']
+        instance = subject.split("-",1)[1].strip()
+        date = theEmail['date']
+        payloadList = []
+        # Get the body of the email
+        # TO-DO
+        for payload in theEmail.get_payload():
+            payloadList.append(payload.get_payload())
+        soup = BeautifulSoup(payloadList[1],"lxml")
+        # Get the type of email
+        if "ALERT" in subject:
+            type = "Alert"
+        elif "RESOLVED" in subject:
+            type = "Resolved"
         else:
-            print ("The file " + filename + " is not a .eml or .msg so skipping")
+            print ("This email is not an alert or a resolved")
+
+        # Create tuple with information and add to list
+        tmp = (instance,type,date)
+        list.append(tmp)
     # If the list is not empty, create excel sheet
     if list:
         # Creates excel workbook and sheet
@@ -79,5 +87,6 @@ if directory:
             row = row + 1
         tkMessageBox.showinfo("PAT-Automation","Excel sheet has been created successfully!")
         workbook.close()
-    else:
-        tkMessageBox.showinfo("PAT-Automation","No valid emails were provided.")
+else:
+    print "There are no new emails"
+server.quit()
