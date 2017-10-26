@@ -5,6 +5,7 @@ import os
 import pathlib2
 import xlsxwriter
 import tkMessageBox
+from bs4 import BeautifulSoup
 
 root = Tkinter.Tk()
 root.withdraw()
@@ -30,7 +31,12 @@ if directory:
             subject = theEmail['subject']
             instance = subject.split("-",1)[1].strip()
             date = theEmail['date']
-
+            payloadList = []
+            # Get the body of the email
+            # TO-DO
+            for payload in theEmail.get_payload():
+                payloadList.append(payload.get_payload())
+            soup = BeautifulSoup(payloadList[1],"lxml")
             # Get the type of email
             if "ALERT" in subject:
                 type = "Alert"
@@ -49,10 +55,16 @@ if directory:
         # Creates excel workbook and sheet
         workbook = xlsxwriter.Workbook('PATInformation.xlsx')
         worksheet = workbook.add_worksheet()
-        # Adds headers for the columns
-        worksheet.write('A1','Instance')
-        worksheet.write('B1','Type')
-        worksheet.write('C1','Date')
+        # Creates bold format
+        bold = workbook.add_format({'bold': True})
+        # Adds headers for the columns and sets width
+        worksheet.write('A1','Instance',bold)
+        worksheet.set_column('A:A',55)
+        worksheet.write('B1','Type',bold)
+        worksheet.set_column('C:C',30)
+        worksheet.write('C1','Date',bold)
+
+        #worksheet.write('D1','Body')
         row = 1
         col = 0
         for x in list:
@@ -62,6 +74,8 @@ if directory:
             worksheet.write(row,col + 1,x[1])
             # Date
             worksheet.write(row,col + 2,x[2])
+            # Body
+            #worksheet.write(row,col + 3,x[3])
             row = row + 1
         tkMessageBox.showinfo("PAT-Automation","Excel sheet has been created successfully!")
         workbook.close()
